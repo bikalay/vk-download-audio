@@ -1,4 +1,63 @@
 'use strict';
 
-import './authTokenListener';
-import './audioSelect';
+let _port;
+
+function getPort() {
+  if (_port) return _port;
+  _port = chrome.runtime.connect({name: 'contextMenus'});
+  _port.onDisconnect.addListener(() => {
+    _port = null;
+  });
+  return _port;
+}
+
+function findAudioId(el) {
+  if(!el || !el.getAttribute) {
+    return;
+  }
+  if(el.getAttribute('data-full-id')) {
+    let audioInfo = {
+      id: el.getAttribute('data-full-id')
+    };
+    try {
+      let trackData = JSON.parse(el.getAttribute('data-audio'));
+      audioInfo.name = trackData[3] || 'Unknown';
+      audioInfo.author = trackData[4] || 'Unknown';
+    }
+    catch(e) {
+      console.error('can\'t parse audio data');
+    }
+    return audioInfo;
+  }
+  else {
+    return el.parentNode && findAudioId(el.parentNode);
+  }
+}
+
+document.addEventListener('mousedown', function(event) {
+  //right click
+  if(event.button === 2) {
+    let audioInfo = findAudioId(event.target);
+    let data = `act=reload_audio&al=1&ids=${audioInfo.id}`;
+
+    let xmlhttp = new XMLHttpRequest();
+    xmlhttp.open('POST', '/al_audio.php', true);
+    xmlhttp.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
+    xmlhttp.onreadystatechange = function() {
+      if (xmlhttp.readyState == 4) {
+        if(xmlhttp.status == 200) {
+          let match = xmlhttp.responseText.match(/(https:\\\/\\\/[^"]+)/);
+          console.log(match);
+          if(match && match[0]) {
+            audioInfo.url = match[0].replace('\\','');
+            getPort().postMessage(JSON.stringify(audioInfo));
+          }
+          else {
+            getPort().postMessage(null);
+          }
+        }
+      }
+    };
+    xmlhttp.send(data);
+  }
+}, true);
