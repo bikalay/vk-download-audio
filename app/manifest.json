@@ -18,7 +18,8 @@
     "https://vk.com/*",
     "https://*.vk.com/*",
     "contextMenus",
-    "storage"
+    "storage",
+    "downloads"
   ],
   "content_scripts": [
     {
