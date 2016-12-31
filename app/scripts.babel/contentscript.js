@@ -22,8 +22,10 @@ function findAudioId(el) {
     };
     try {
       let trackData = JSON.parse(el.getAttribute('data-audio'));
-      audioInfo.name = trackData[3] || 'Unknown';
-      audioInfo.author = trackData[4] || 'Unknown';
+      //get tags
+      let regex = /(<([^>]+)>)/ig
+      audioInfo.name = (trackData[3] && trackData[3].replace(regex, ''))|| 'Unknown';
+      audioInfo.author = (trackData[4] && trackData[4].replace(regex, '')) || 'Unknown';
     }
     catch(e) {
       console.error('Can\'t parse audio data');
@@ -40,9 +42,6 @@ document.addEventListener('mousedown', function(event) {
   if(event.button === 2) {
     let audioInfo = findAudioId(event.target);
     getPort().postMessage(JSON.stringify(audioInfo));
-
-    /*
-    */
   }
 }, true);
 
